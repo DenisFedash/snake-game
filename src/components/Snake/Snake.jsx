@@ -1,26 +1,38 @@
 import { useEffect, useState } from "react";
+import { useInterval } from "../../hooks/useInterval";
 import { Cell } from "../Cell/Cell";
 
 const BOARD_SIZE = 10;
 const DEFAULT_CELLS_VALUE = Array(BOARD_SIZE).fill(Array(BOARD_SIZE).fill(0));
-const SPEED = 500;
+const SPEED = 300;
+const SNAKE_START = [[1, 1]];
+const FOOD_START = [5, 5];
 const ARROWS = ["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft"];
 
 const borders = (position) => {
   switch (true) {
     case position >= BOARD_SIZE:
       return 0;
+      break;
     case position < 0:
       return BOARD_SIZE - 1;
+      break;
     default:
       return position;
   }
 };
 
 export const Snake = () => {
-  const [snake, setSnake] = useState([[1, 1]]);
-  const [food, setFood] = useState([5, 5]);
+  const [snake, setSnake] = useState(SNAKE_START);
+  const [food, setFood] = useState(FOOD_START);
   const [direction, setDirection] = useState(ARROWS[0]);
+  const [speed, setSpeed] = useState(null);
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+
+  useInterval(() => gameLoop(), speed);
+
+  useEffect(() => document.addEventListener("keydown", handleKeyDown));
 
   const handleKeyDown = (e) => {
     const index = ARROWS.indexOf(e.key);
@@ -28,13 +40,6 @@ export const Snake = () => {
       setDirection(ARROWS[index]);
     }
   };
-
-  useEffect(() => document.addEventListener("keydown", handleKeyDown));
-
-  useEffect(() => {
-    const interval = gameLoop();
-    return () => clearInterval(interval);
-  }, [snake]);
 
   const generateFood = () => {
     let newFood;
@@ -50,45 +55,78 @@ export const Snake = () => {
   };
 
   const gameLoop = () => {
-    const timer = setTimeout(() => {
-      const newSnake = snake;
-      let move = [];
+    const newSnake = [...snake];
+    let move = [];
 
-      switch (direction) {
-        case ARROWS[0]:
-          move = [1, 0];
-          break;
-        case ARROWS[1]:
-          move = [-1, 0];
-          break;
-        case ARROWS[2]:
-          move = [0, 1];
-          break;
-        case ARROWS[3]:
-          move = [0, -1];
-          break;
-      }
+    switch (direction) {
+      case ARROWS[0]:
+        move = [1, 0];
+        break;
+      case ARROWS[1]:
+        move = [-1, 0];
+        break;
+      case ARROWS[2]:
+        move = [0, 1];
+        break;
+      case ARROWS[3]:
+        move = [0, -1];
+        break;
+    }
 
-      const head = [
-        borders(newSnake[newSnake.length - 1][0] + move[0]),
-        borders(newSnake[newSnake.length - 1][1] + move[1]),
-      ];
+    const head = [
+      borders(newSnake[newSnake.length - 1][0] + move[0]),
+      borders(newSnake[newSnake.length - 1][1] + move[1]),
+    ];
 
-      newSnake.push(head);
-      let spliceIndex = 1;
-      if (head[0] === food[0] && head[1] === food[1]) {
-        spliceIndex = 0;
-        generateFood();
-      }
-      setSnake(newSnake.slice(spliceIndex));
-    }, SPEED);
-    return timer;
+    newSnake.push(head);
+    setScore(snake.length + 1);
+    let spliceIndex = 1;
+    if (head[0] === food[0] && head[1] === food[1]) {
+      spliceIndex = 0;
+      generateFood();
+    }
+
+    if (checkCollision(head)) {
+      setSpeed(null);
+      setGameOver(true);
+      handleSetScore();
+    }
+
+    setSnake(newSnake.slice(spliceIndex));
   };
+
+  const startGame = () => {
+    setSnake(SNAKE_START);
+    setFood(FOOD_START);
+    setDirection(ARROWS[0]);
+    setSpeed(SPEED);
+    setGameOver(false);
+  };
+
+  const endGame = () => {
+    setSpeed(null);
+    setGameOver(true);
+  };
+
+  const checkCollision = (head) => {
+    for (const s of snake) {
+      if (head[0] === s[0] && head[1] === s[1]) return true;
+    }
+    return false;
+  };
+
+  const handleSetScore = () => {
+    if (score > Number(localStorage.getItem("snakeScore"))) {
+      localStorage.setItem("snakeScore", JSON.stringify(score));
+    }
+  };
+
   return (
     <div>
-      <h1>Result: {snake.length}</h1>
+      <h2>Result: {snake.length - 1}</h2>
+      <h2>High Score: {localStorage.getItem("snakeScore")}</h2>
       {DEFAULT_CELLS_VALUE.map((row, indexR) => (
-        <div className="row">
+        <div className="row" key={indexR}>
           {row.map((cell, indexC) => {
             let type =
               snake.some((item) => item[0] === indexR && item[1] === indexC) &&
@@ -101,6 +139,8 @@ export const Snake = () => {
           })}
         </div>
       ))}
+      {gameOver && <div>Game Over!</div>}
+      <button onClick={startGame}>Start Game</button>
     </div>
   );
 };
