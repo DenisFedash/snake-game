@@ -27,6 +27,14 @@ code {
   background-color: yellow;
 }
 
+.foodCell{
+  background-color: green;
+}
+
+.goldenfoodCell{
+  background-color: grey;
+}
+
 .snake{
   background-color: blue;
 }

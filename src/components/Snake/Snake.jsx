@@ -13,10 +13,10 @@ const borders = (position) => {
   switch (true) {
     case position >= BOARD_SIZE:
       return 0;
-      break;
+
     case position < 0:
       return BOARD_SIZE - 1;
-      break;
+
     default:
       return position;
   }
@@ -25,6 +25,8 @@ const borders = (position) => {
 export const Snake = () => {
   const [snake, setSnake] = useState(SNAKE_START);
   const [food, setFood] = useState(FOOD_START);
+  const [foodCell, setFoodCell] = useState([8, 8]);
+  const [goldenfoodCell, setgoldenFoodCell] = useState([2, 2]);
   const [direction, setDirection] = useState(ARROWS[0]);
   const [speed, setSpeed] = useState(null);
   const [gameOver, setGameOver] = useState(false);
@@ -43,15 +45,37 @@ export const Snake = () => {
 
   const generateFood = () => {
     let newFood;
+    let foodCell;
+    let goldenFood;
     do {
       newFood = [
         Math.floor(Math.random() * BOARD_SIZE),
         Math.floor(Math.random() * BOARD_SIZE),
       ];
+      foodCell = [
+        Math.floor(Math.random() * BOARD_SIZE),
+        Math.floor(Math.random() * BOARD_SIZE),
+      ];
+      goldenFood = [
+        Math.floor(Math.random() * BOARD_SIZE),
+        Math.floor(Math.random() * BOARD_SIZE),
+      ];
     } while (
-      snake.some((item) => item[0] === newFood[0] && item[1] === newFood[1])
+      snake.some(
+        (item) =>
+          (item[0] === newFood[0] && item[1] === newFood[1]) ||
+          (foodCell[0] && item[1] === foodCell[1]) ||
+          (goldenFood[0] && item[1] === goldenFood[1])
+      )
     );
     setFood(newFood);
+    setFoodCell(foodCell);
+    setgoldenFoodCell(goldenFood);
+
+    newFood = [
+      Math.floor(Math.random() * BOARD_SIZE),
+      Math.floor(Math.random() * BOARD_SIZE),
+    ];
   };
 
   const gameLoop = () => {
@@ -71,6 +95,8 @@ export const Snake = () => {
       case ARROWS[3]:
         move = [0, -1];
         break;
+      default:
+        return direction;
     }
 
     const head = [
@@ -80,8 +106,13 @@ export const Snake = () => {
 
     newSnake.push(head);
     setScore(snake.length + 1);
+
     let spliceIndex = 1;
-    if (head[0] === food[0] && head[1] === food[1]) {
+    if (
+      (head[0] === food[0] && head[1] === food[1]) ||
+      (head[0] === foodCell[0] && head[1] === foodCell[1]) ||
+      (head[0] === goldenfoodCell[0] && head[1] === goldenfoodCell[1])
+    ) {
       spliceIndex = 0;
       generateFood();
     }
@@ -90,6 +121,10 @@ export const Snake = () => {
       setSpeed(null);
       setGameOver(true);
       handleSetScore();
+    }
+
+    if (snake.length === 6) {
+      setSpeed(100);
     }
 
     setSnake(newSnake.slice(spliceIndex));
@@ -101,11 +136,15 @@ export const Snake = () => {
     setDirection(ARROWS[0]);
     setSpeed(SPEED);
     setGameOver(false);
+    setFoodCell([8, 8]);
+    setgoldenFoodCell([2, 2]);
   };
 
-  const endGame = () => {
+  const onPause = () => {
     setSpeed(null);
-    setGameOver(true);
+  };
+  const onPlay = () => {
+    setSpeed(SPEED);
   };
 
   const checkCollision = (head) => {
@@ -132,7 +171,14 @@ export const Snake = () => {
               snake.some((item) => item[0] === indexR && item[1] === indexC) &&
               "snake";
             if (type !== "snake") {
-              type = food[0] === indexR && food[1] === indexC && "food";
+              type =
+                (food[0] === indexR && food[1] === indexC && "food") ||
+                (foodCell[0] === indexR &&
+                  foodCell[1] === indexC &&
+                  "foodCell") ||
+                (goldenfoodCell[0] === indexR &&
+                  goldenfoodCell[1] === indexC &&
+                  "goldenfoodCell");
             }
 
             return <Cell key={indexC} type={type} />;
@@ -141,6 +187,17 @@ export const Snake = () => {
       ))}
       {gameOver && <div>Game Over!</div>}
       <button onClick={startGame}>Start Game</button>
+
+      <button
+        onClick={() => {
+          {
+            speed ? onPause() : onPlay();
+          }
+        }}
+        disabled={gameOver}
+      >
+        {speed ? "Pause" : "Play"}
+      </button>
     </div>
   );
 };
