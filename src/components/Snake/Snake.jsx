@@ -71,11 +71,6 @@ export const Snake = () => {
     setFood(newFood);
     setFoodCell(foodCell);
     setgoldenFoodCell(goldenFood);
-
-    newFood = [
-      Math.floor(Math.random() * BOARD_SIZE),
-      Math.floor(Math.random() * BOARD_SIZE),
-    ];
   };
 
   const gameLoop = () => {
@@ -105,7 +100,7 @@ export const Snake = () => {
     ];
 
     newSnake.push(head);
-    setScore(snake.length + 1);
+    setScore(snake.length - 1);
 
     let spliceIndex = 1;
     if (
@@ -123,8 +118,8 @@ export const Snake = () => {
       handleSetScore();
     }
 
-    if (snake.length === 6) {
-      setSpeed(100);
+    if (snake.length === 51) {
+      setSpeed(200);
     }
 
     setSnake(newSnake.slice(spliceIndex));
